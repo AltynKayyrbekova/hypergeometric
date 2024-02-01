@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Гипергеометрическое распределение</title>
+    <link rel="stylesheet" href="style13.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js" 
+    integrity="sha512-UXumZrZNiOwnTcZSHLOfcTs0aos2MzBWHXOHOuB0J/R44QB0dwY5JgfbvljXcklVf65Gc4El6RjZ+lnwd2az2g==" 
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js" 
+    integrity="sha512-wUYbRPLV5zs6IqvWd88HIqZU/b8TBx+I8LEioQ/UC0t5EMCLApqhIAnUg7EsAzdbhhdgW07TqYDdH3QEXRcPOQ==" 
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-statistics/7.1.1/simple-statistics.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.1"></script>
+    
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+</head>
+
+<body>
+    <header>
+        <h1>Гипергеометрическое распределение</h1>
+    </header>
+    <div class="container">
+
+        <section id="simulation-section">
+            <div role="button" onclick="toggleExampleText()" style="color: rgb(139, 139, 255);">Пример задачи</div>
+            <div id="example-text" style="display: none;">
+                Предположим, у нас есть группа из \(N\) элементов, где \(K\) - интересующие нас элементы из \(N\).
+                Мы случайным образом выбираем \(n\) элементов из \(N\) без замены. Например, если у нас в корзине есть
+                \(N=20\) шаров, \(K=8\) из них красные, и мы случайным образом берём \(n=5\) элементов из корзины,
+                то гипергеометрическое распределение может ответить на вопрос: "Какова вероятность того, что ровно \(k\) из взятых
+                шаров, например 3 (\(k=3\)), из них будут красными?". Для этого введите значения \(N\), \(K\) и \(n\) 
+                и нажмите кнопку "Старт". Иллюстратор выведет значения вероятностей для каждого \(k=1,...,n\)
+                в таблице и график гипергеометрического распределения с численными характеристиками \( M(X) \) и \( D(X) \).
+            </div>
+
+            <form id="hypergeometric-form">
+                <label for="N">Общее количество элементов (\(N\)):</label>
+                <p></p>
+                <input type="number" id="N" name="N" min="1" required>
+                <p></p>
+                <label for="K">Количество интересующих нас элементов (\(0 \leq K \leq N\)):</label>
+                <p></p>
+                <input type="number" id="K" name="K" required min="0">
+                <p></p>
+                <label for="n">Количество выбираемых элементов (\(1 \leq n \leq N\)):</label>
+                <p></p>
+                <input type="number" id="n" name="n" required min="1" max="N">
+
+                <p></p>
+                <button type="button" onclick="generateHypergeometric()">Старт</button>
+            </form>
+
+            <canvas id="hypergeometric-chart"></canvas>
+
+            <div id="output" style="display: none;">
+                <h2>Численные характеристики:</h2>
+                <p></p>
+                <p id="output-mean">Математическое ожидание (Mean): \(M(X) = E(X) = \frac{n \cdot K}{N} \) = <span class="math"></span></p>
+                <p></p>
+                <p id="output-variance">Дисперсия (Variance): \(D(X) = Var(X) = \frac{n \cdot K(N-K)(N-n)}{N^2(N-1)} \) = <span class="math"></span></p>
+            </div>
+
+            <div role="button" onclick="toggleExplanation()" style="color: rgb(139, 139, 255)">Объяснение</div>
+            <div id="explanation" style="display: none;">
+                <p>Вероятность того, что ровно \(k\) элементов из выбранных \(n\) являются интересующими нас элементами, вычисляется
+                    по формуле:</p>
+                \[ P(X = k) = \frac{{\binom{K}{k} \cdot \binom{N-K}{n-k}}}{{\binom{N}{n}}}, \]
+                <p>где</p>
+                <ul>
+                    <li> \( \binom{a}{b} \) - число сочетаний из a по b, равное \(\frac{a!}{b!(a-b)!}\),</li>
+                    <li> \( K \) - количество интересующих нас элементов,</li>
+                    <li> \( N \) - общее количество элементов,</li>
+                    <li> \( n \) - количество выбираемых элементов.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="distribution-table-section" style="width: 40%; display: none;">
+            <div class="distribution-table-container">
+                <label for="decimal-places">Количество знаков после запятой:</label>
+                <input class="decimal" type="number" id="decimal-places" min="0" onchange="updateDecimalPlaces()">
+                <table id="distribution-table-content">
+                    <thead>
+                        <tr>
+                            <th>\(k\)</th>
+                            <th>\(P(X=k)\)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="distribution-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function toggleExampleText() {
+            const exampleText = document.getElementById('example-text');
+            exampleText.style.display = (exampleText.style.display === 'none' || exampleText.style.display === '') ? 'block' : 'none';
+        }
+
+        function toggleExplanation() {
+            const explanation = document.getElementById('explanation');
+            explanation.style.display = (explanation.style.display === 'none' || explanation.style.display === '') ? 'block' : 'none';
+        }
+
+        function generateHypergeometric() {
+            const NInput = document.getElementById('N');
+            const KInput = document.getElementById('K');
+            const nInput = document.getElementById('n');
+            const outputContainer = document.getElementById('output');
+            const distributionTableSection = document.getElementById('distribution-table-section');
+
+            const N = parseInt(NInput.value);
+            const K = parseInt(KInput.value);
+            const n = parseInt(nInput.value);
+
+            // Validation check
+            if (
+                isNaN(N) || isNaN(K) || isNaN(n) ||
+                N <= 0 || K < 0 || n <= 0 || n > N
+            ) {
+                alert('Пожалуйста, введите корректные значения. Все числа должны быть положительными, и \(K\) должно быть не больше \(N\), а \(n\) должно быть не меньше 1 и не больше \(N\).');
+                return;
+            }
+
+            const data = calculateHypergeometricDistribution(N, K, n);
+            updateChart(data, n);
+            updateOutput(N, K, n);
+            updateDistributionTable(data);
+
+            outputContainer.style.display = 'block';
+            distributionTableSection.style.display = 'block';
+        }
+
+        function calculateHypergeometricDistribution(N, K, n) {
+            const data = [];
+            let mean = 0;
+            let variance = 0;
+            const decimalPlaces = getDecimalPlaces();
+
+            for (let k = 0; k <= Math.min(K, n); k++) {
+                const probability = hypergeometricProbability(N, K, n, k);
+                data.push({
+                    x: k,
+                    y: probability
+                });
+
+                mean += k * probability;
+                variance += k * k * probability;
+            }
+
+            variance -= mean * mean;
+
+            return data;
+        }
+
+        function updateDistributionTable(data) {
+            const tableBody = document.getElementById('distribution-table-body');
+            tableBody.innerHTML = '';
+            const decimalPlaces = getDecimalPlaces();
+
+            data.forEach(entry => {
+                const row = document.createElement('tr');
+                const xCell = document.createElement('td');
+                const probabilityCell = document.createElement('td');
+
+                xCell.textContent = entry.x;
+                probabilityCell.textContent = entry.y.toExponential(decimalPlaces);
+
+                row.appendChild(xCell);
+                row.appendChild(probabilityCell);
+
+                tableBody.appendChild(row);
+            });
+        }
+
+        function updateChart(data, n) {
+            const ctx = document.getElementById('hypergeometric-chart').getContext('2d');
+            if (window.myHypergeometricChart) {
+                window.myHypergeometricChart.destroy();
+            }
+
+            const chartType = 'bar';
+
+            const maxProbability = Math.max(...data.map(entry => entry.y));
+            const yAxisMax = Math.min(maxProbability + 0.01, 1);
+
+            const decimalPlaces = getDecimalPlaces();
+            const stepSize = 1 / Math.pow(10, decimalPlaces);
+
+            window.myHypergeometricChart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: Array.from({ length: data.length }, (_, i) => i.toString()),
+                    datasets: [{
+                        label: 'Probability',
+                        data: data.map(entry => entry.y),
+                        borderWidth: 1,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            max: n,
+                            ticks: {
+                                suggestedMin: 0,
+                                suggestedMax: n,
+                                callback: (value) => {
+                                    console.log(value)
+                                    return value.toFixed(0)
+                                }
+                            }
+                        },
+                        y: {
+                            min: 0,
+                            max: yAxisMax,
+                            ticks: {
+                                stepSize: stepSize,
+                                suggestedMin: 0,
+                                suggestedMax: yAxisMax,
+                                callback: (value) => {
+                                    console.log(value)
+                                    return value.toFixed(decimalPlaces)
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'xy',
+                                onPan: function ({ chart }) {
+                                    const scales = chart.scales;
+                                    
+                                    if (scales['x'].min < 0) scales['x'].min = 0;
+                                    if (scales['x'].max > n) scales['x'].max = n;
+                                    if (scales['y'].min < 0) scales['y'].min = 0;
+                                    if (scales['y'].max > yAxisMax) scales['y'].max = yAxisMax;
+                                }
+                            },
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                    speed: 0.1
+
+                                },
+                                mode: 'xy',
+                                onZoom: function ({ chart }) {
+                                    const scales = chart.scales;
+                                    if (scales['x'].min < 0) scales['x'].min = 0;
+                                    if (scales['x'].max > n) scales['x'].max = n;
+                                    if (scales['y'].min < 0) scales['y'].min = 0;
+                                    if (scales['y'].max > yAxisMax) scales['y'].max = yAxisMax;
+                                }
+                            }
+                        }
+                    },
+                    indexAxis: 'x',
+                    barPercentage:0.1
+                }
+            });
+            
+            window.myHypergeometricChart.update();
+            
+        }
+
+        function updateOutput(N, K, n) {
+            const outputContainer = document.getElementById('output');
+            const meanElement = outputContainer.querySelector('#output-mean span.math');
+            const varianceElement = outputContainer.querySelector('#output-variance span.math');
+            const decimalPlaces = getDecimalPlaces();
+
+            const mean = ((n * K) / N).toFixed(decimalPlaces);
+            const variance = ((n * K * (N - K) * (N - n)) / (N * N * (N - 1))).toFixed(decimalPlaces);
+
+            meanElement.textContent = mean;
+            varianceElement.textContent = variance;
+        }
+
+        function hypergeometricProbability(N, K, n, k) {
+            return (
+                (choose(K, k) * choose(N - K, n - k)) /
+                choose(N, n)
+            );
+        }
+
+        function choose(n, k) {
+            if (k === 0) return 1;
+            return (n * choose(n - 1, k - 1)) / k;
+        }
+
+        function getDecimalPlaces() {
+            const decimalPlacesInput = document.getElementById('decimal-places');
+            return parseInt(decimalPlacesInput.value) || 3;
+        }
+
+        function updateDecimalPlaces() {
+            updateDistributionTable(calculateHypergeometricDistribution(
+                parseInt(document.getElementById('N').value),
+                parseInt(document.getElementById('K').value),
+                parseInt(document.getElementById('n').value)
+            ));
+        }
+    </script>
+</body>
+
+</html>
